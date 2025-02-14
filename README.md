@@ -13,7 +13,7 @@ None were _too_ helpful, as they seemed to hint at actually running the program 
 ![image.png](img/image_1739496200378_0.png)
 The binary was completely stripped of symbols; all that remained were symbols that were necessary for import at runtime (e.g., Windows-related functions)
 
-Well, we've got an entrypoint and a chain of functions that perform the usual C++ startup stuff, like calling global constructors, so let's keep double-clicking anything not labeled with `exit` or `noreturn` and see if anything interesting pops up.
+Well, we've got an entrypoint and a chain of functions that perform the usual CRT startup stuff, like calling global constructors, so let's keep double-clicking anything not labeled with `exit` or `noreturn` and see if anything interesting pops up.
 
 ## `main`
 Eventually, after clicking through some of the function calls during initialization, we come across something that looks like this:
@@ -56,7 +56,7 @@ Before going any further, I do want to slow down and figure out what the Win32 s
 1. `VirtualAllocEx` is creating some new memory
 2. `WriteProcessMemory` writes some data to that memory.
 3. `CreateRemoteThread` creates a new thread under the current process (`calculator.exe`) with the memory from `[1]` as its "code."
-4. `WaitForSingleObject` will wait either for the thread to finish executing _or_ 12 milliseconds, whichever comes first.
+4. `WaitForSingleObject` will wait either for the thread to finish executing _or_ 10 milliseconds, whichever comes first.
 5. `VirtualFreeEx` will free the memory allocated in `[1]`
 6. `CloseHandle` will close the handle to the thread and the process.
 
