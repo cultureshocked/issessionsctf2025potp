@@ -7,6 +7,7 @@ I'm primarily a Linux user, and while I can emulate/virtualize Windows programs 
 
 ## Hints
 ![image.png](img/image_1739502179782_0.png)
+
 None were _too_ helpful, as they seemed to hint at actually running the program to see how it behaves, especially with ASLR being a runtime feature. However, hinting at the language was a bit helpful, because most of the other RE challenges I tackled were written in C only. I'm glad this hint was included, because when I opened up the binary in BinaryNinja, I was greeted with the following:
 
 ![image.png](img/image_1739496200378_0.png)
@@ -45,6 +46,7 @@ Before we do that, we should figure out what those three `for`-loops are doing, 
 
 All three loops call `sub_49ffa0`, so let's see if we can immediately figure out what it does, as it might give us a hint as to what this whole block does.
 ![image.png](img/image_1739498167194_0.png)
+
 Well, the code _looks_ a bit complicated, with even BinaryNinja's HLIL making heavy use of registers to describe behaviour, but that string is a very nice saving-grace. This function performs `std::string::append()` or something similar to `strcat` in C.
 
 And if we go back to that block from earlier, we find that `var_28c` is likely a `std::string` being operated on. Let's fill in some of these symbols, now.
@@ -57,9 +59,11 @@ Before going any further, I do want to slow down and figure out what the Win32 s
 4. `WaitForSingleObject` will wait either for the thread to finish executing _or_ 10 milliseconds, whichever comes first.
 5. `VirtualFreeEx` will free the memory allocated in `[1]`
 6. `CloseHandle` will close the handle to the thread and the process.
+
 During this part, we should also figure out what that `sub_4310e0` function does, as it's used twice.
 ![image.png](img/image_1739498686099_0.png)
 ![image.png](img/image_1739498711037_0.png)
+
 Interesting, it just reads the raw data 4 bytes from the pointer passed in. There are probably a couple things to recall right now:
 
 1. This binary had its symbols stripped, and by extension probably has some compile-time optimization in-place.
