@@ -66,6 +66,8 @@ Before going any further, I do want to slow down and figure out what the Win32 s
 5. `VirtualFreeEx` will free the memory allocated in `[1]`
 6. `CloseHandle` will close the handle to the thread and the process.
 
+![image.png](img/2025-02-14_00-11.png)
+
 During this part, we should also figure out what that `sub_4310e0` function does, as it's used twice.
 
 ![image.png](img/image_1739498686099_0.png)
