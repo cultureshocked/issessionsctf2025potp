@@ -18,6 +18,7 @@ Well, we've got an entrypoint and a chain of functions that perform the usual CR
 
 ## `main`
 Eventually, after clicking through some of the function calls during initialization, we come across something that looks like this:
+
 ![image.png](img/image_1739496670935_0.png)
 
 Now, I don't know about you, but `0x401530` through `0x40157a` look an awful lot like print-statements. And those function calls and C-strings look an awful lot like base64.
@@ -32,13 +33,16 @@ So, with all of that, we can start cleaning up the code a bit. I'm still extreme
 Normally, I would have already tried to decode all the b64 strings myself and hope it spits something out at me.
 
 The problem here, though, is that there are multiple strings all put together differently. This is a typical "stack strings" way of embedding a string into a binary without a utility like `strings` dumping all the information back out, but there's some added complexity insofar as scrambling up multiple strings, as denoted by the multiple `=` padding bytes see in `stdstr_j` and `stdstr_t`. While the other `var_83` or `var_82` kinds of variables might be indicative of some kind of delimiting, it's still not guaranteed it's what I'm looking for, so for now, we'll pursue regular program execution with our new symbol names.
+
 ![image.png](img/image_1739497559121_0.png)
 
 ## Last Iteration
 This is, in fact, a calculator.
+
 ![image.png](img/image_1739497845771_0.png)
 
 You may notice something interesting, though: there are only three iterations, and if we scroll down a bit, we find something more interesting that occurs on the last iteration (e.g., `i == 2`):
+
 ![image.png](img/image_1739497906754_0.png)
 
 Wow, alright. We have some real Win32 stuff going on now. These symbols are all external, so we don't need to decode them, and by extension, we can make use of their definitions to declare some new symbol names.
@@ -46,6 +50,7 @@ Wow, alright. We have some real Win32 stuff going on now. These symbols are all 
 Before we do that, we should figure out what those three `for`-loops are doing, though, as they are modifying `var_28c` which is being used everywhere later on.
 
 All three loops call `sub_49ffa0`, so let's see if we can immediately figure out what it does, as it might give us a hint as to what this whole block does.
+
 ![image.png](img/image_1739498167194_0.png)
 
 Well, the code _looks_ a bit complicated, with even BinaryNinja's HLIL making heavy use of registers to describe behaviour, but that string is a very nice saving-grace. This function performs `std::string::append()` or something similar to `strcat` in C.
@@ -62,6 +67,7 @@ Before going any further, I do want to slow down and figure out what the Win32 s
 6. `CloseHandle` will close the handle to the thread and the process.
 
 During this part, we should also figure out what that `sub_4310e0` function does, as it's used twice.
+
 ![image.png](img/image_1739498686099_0.png)
 ![image.png](img/image_1739498711037_0.png)
 
@@ -71,9 +77,11 @@ Interesting, it just reads the raw data 4 bytes from the pointer passed in. Ther
 2. The binary is built for 32bit Windows, not 64bit. 
 
 If we combine those two things, we'll find that the length of a `std::string` is actually the second field in the structure. Using godbolt to illustrate the point, at `-O2` it optimizes out any explicit call to `std::string::size()` or otherwise, and just sets `eax` to four bytes of the string on the stack at offset 4.
+
 ![image.png](img/image_1739499477507_0.png)
 
 And, after a little more cleanup, our code looks like this:
+
 ![image.png](img/image_1739499802965_0.png)
 
 Generally speaking, I'm pretty happy with that, for now.
@@ -82,23 +90,27 @@ Generally speaking, I'm pretty happy with that, for now.
 I'm on Linux, and have very little intention of booting into a VM and trying to move all my work over at this point, so instead of trying to run the code and setting my silly little breakpoints, I'm going to put together some data myself. Those three `for`-loops look promising, as they're referencing all those tiny base64-resembling strings from earlier on.
 
 It's probably a really good idea to figure out what the condition actually is, first.
+
 ![image.png](img/image_1739499988260_0.png)
 
 Basically, we get the address of the string, and increment by `0x18` or decimal 24, and we **_stop_** right when we get to `0x60` or decimal `96`. It might be helpful to recognize that `0x60` is actually `4 * 0x18`, and since `0x60` is out stop condition, our loop will iterate over `0x0`, `0x18`, `0x30`, `0x48` only, or a total of `4` iterations.
 
 Well, we've established that the whole `stdstr_X` section was effectively a more roundabout way of using stack strings, so let's go take another look at our 'stack'. We're starting at `k`...
+
 ![image.png](img/image_1739500198825_0.png)
 
 And certainly, `stdstr_k` is at a stack offset of `-0x1e4` while `stdstr_l` is found at `-0x1cc`, or a total of `0x18` bytes apart. So, unlike that little `std::size` function earlier, we are not looking into the actual in-memory structure: we are looking at multiple strings.
 Thus, in our `for`-loop, `j` is going to point at the strings [`k`, `l`, `m`, `n`\], and put them all together in our buffer.
 
 The next loop will take three strings (loop breaks at `0x48`) from `o` string, or [`o`, `p`, `q`\]...
+
 ![image.png](img/image_1739500470306_0.png)
 
 And the one after that will take another 4 strings starting at `d`, or [`d`, `e`, `f`, `g`\].
 
 ## Putting it together
 Just putting the strings together by hand in CyberChef yields this result:
+
 ![image.png](img/image_1739500643322_0.png)
 
 By now, one piece of information should be immediately obvious: `HIdd3n_M3mory` written backwards.
