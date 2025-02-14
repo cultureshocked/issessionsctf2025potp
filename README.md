@@ -11,6 +11,7 @@ I'm primarily a Linux user, and while I can emulate/virtualize Windows programs 
 None were _too_ helpful, as they seemed to hint at actually running the program to see how it behaves, especially with ASLR being a runtime feature. However, hinting at the language was a bit helpful, because most of the other RE challenges I tackled were written in C only. I'm glad this hint was included, because when I opened up the binary in BinaryNinja, I was greeted with the following:
 
 ![image.png](img/image_1739496200378_0.png)
+
 The binary was completely stripped of symbols; all that remained were symbols that were necessary for import at runtime (e.g., Windows-related functions)
 
 Well, we've got an entrypoint and a chain of functions that perform the usual CRT startup stuff, like calling global constructors, so let's keep double-clicking anything not labeled with `exit` or `noreturn` and see if anything interesting pops up.
