@@ -82,6 +82,7 @@ I'm on Linux, and have very little intention of booting into a VM and trying to 
 
 It's probably a really good idea to figure out what the condition actually is, first.
 ![image.png](img/image_1739499988260_0.png)
+
 Basically, we get the address of the string, and increment by `0x18` or decimal 24, and we **_stop_** right when we get to `0x60` or decimal `96`. It might be helpful to recognize that `0x60` is actually `4 * 0x18`, and since `0x60` is out stop condition, our loop will iterate over `0x0`, `0x18`, `0x30`, `0x48` only, or a total of `4` iterations.
 
 Well, we've established that the whole `stdstr_X` section was effectively a more roundabout way of using stack strings, so let's go take another look at our 'stack'. We're starting at `k`...
